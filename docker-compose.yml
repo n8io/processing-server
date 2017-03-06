@@ -1,0 +1,169 @@
+---
+  shares:
+    image: "tianon/true"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "${DEC_DIR_LOCAL}:/mnt/virtual:ro"
+      - "${DEC_DIR_LOCAL}:/data"
+      - "./configs:/configs"
+      - "${TEMP_DIR}:/temp"
+  sabnzbd:
+    image: "timhaak/sabnzbd"
+    volumes_from:
+      - "shares"
+    volumes:
+      - "./configs/sabnzbd:/config"
+      - "${TEMP_DIR}/incomplete/sabnzbd:/incomplete"
+      - "${TEMP_DIR}/tv:/tv"
+      - "${TEMP_DIR}/movies/release:/movies/release"
+      - "${TEMP_DIR}/movies/prerelease:/movies/prerelease"
+    environment:
+      - "TZ=America/New_York"
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    restart: "always"
+  sonarr:
+    image: "linuxserver/sonarr"
+    volumes_from:
+      - "shares"
+    volumes:
+      - "./configs/sonarr:/config"
+      - "${TEMP_DIR}/tv:/downloads/tv"
+      - "${DEC_DIR_LOCAL}/tv:/tv"
+      - "${TEMP_DIR}/tv/:/temp/tv"
+      - "/dev/rtc:/dev/rtc:ro"
+    ports:
+      - "8989:8989"
+    environment:
+      - "PUID=0"
+      - "PGID=0"
+      - "TZ=America/New_York"
+    links:
+      - "sabnzbd"
+      - "transmission"
+  couchpotato:
+    image: "timhaak/couchpotato"
+    volumes_from:
+      - "shares"
+    volumes:
+      - "./configs/couchpotato/release:/config"
+      - "./configs/couchpotato/release/data:/data"
+      - "${TEMP_DIR}/movies/release:/completed"
+      - "${DEC_DIR_LOCAL}/movies/release:/movies"
+    links:
+      - "sabnzbd"
+      - "transmission"
+    ports:
+      - "5050:5050"
+    environment:
+      - "TZ=America/New_York"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    restart: "always"
+  couchpotatoprerelease:
+    image: "timhaak/couchpotato"
+    volumes_from:
+      - "shares"
+    links:
+      - "sabnzbd"
+      - "transmission"
+    volumes:
+      - "./configs/couchpotato/prerelease:/config"
+      - "./configs/couchpotato/prerelease/data:/data"
+      - "${TEMP_DIR}/movies/prerelease:/completed"
+      - "${DEC_DIR_LOCAL}/movies/prerelease:/movies"
+    ports:
+      - "5051:5050"
+    environment:
+      - "TZ=America/New_York"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    restart: "always"
+  transmission:
+    image: "haugene/transmission-openvpn"
+    volumes_from:
+      - "shares"
+    environment:
+      - "OPENVPN_USERNAME=${PIA_USER}"
+      - "OPENVPN_PASSWORD=${PIA_PASS}"
+      - "OPENVPN_PROVIDER=PIA"
+      - "OPENVPN_CONFIG=Netherlands"
+      - "TRANSMISSION_HOME=/config"
+      - "TRANSMISSION_SPEED_LIMIT_DOWN=100000"
+      - "TRANSMISSION_SPEED_LIMIT_DOWN_ENABLED=true"
+      - "TRANSMISSION_SPEED_LIMIT_UP=1"
+      - "TRANSMISSION_SPEED_LIMIT_UP_ENABLED=true"
+      - "TRANSMISSION_DOWNLOAD_DIR=/temp"
+      - "TRANSMISSION_INCOMPLETE_DIR=/incomplete"
+      - "TRANSMISSION_INCOMPLETE_DIR_ENABLED=true"
+      - "TRANSMISSION_DOWNLOAD_LIMIT=100000"
+      - "TRANSMISSION_ALT_SPEED_DOWN=100000"
+      - "TRANSMISSION_ALT_SPEED_UP=1"
+      - "TRANSMISSION_ALT_SPEED_ENABLED=false"
+      - "TRANSMISSION_ALT_SPEED_TIME_ENABLED=false"
+      - "TRANSMISSION_DOWNLOAD_QUEUE_SIZE=100"
+      - "TRANSMISSION_DOWNLOAD_QUEUE_ENABLED=true"
+      - "TRANSMISSION_UPLOAD_SLOTS_PER_TORRENT=1"
+      - "TRANSMISSION_RPC_USERNAME=${UMS_USER}"
+      - "TRANSMISSION_RPC_PASSWORD=${UMS_PASS}"
+      - "TRANSMISSION_RPC_AUTHENTICATION_REQUIRED=true"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    volumes:
+      - "./configs/transmission:/config"
+      - "${TEMP_DIR}/incomplete/transmission:/incomplete"
+      - "${TEMP_DIR}/tv:/tv"
+      - "${TEMP_DIR}/movies/prerelease:/movies/prerelease"
+      - "${TEMP_DIR}/movies/release:/movies/release"
+    dns:
+      - "8.8.8.8"
+      - "8.8.4.4"
+    ports:
+      - "9091:9091"
+    restart: "always"
+    privileged: true
+  nginx:
+    image: "nginx"
+    links:
+      - "transmission"
+    volumes:
+      - "./build/docker/nginx.conf:/etc/nginx/nginx.conf:ro"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    ports:
+      - "8091:8091"
+  logio-server:
+    image: temal/logio-server
+    volumes:
+      - "./configs/logio/server:/home/logio/.log.io"
+    ports:
+      - "28777:28777"
+      - "28778:28778"
+  logio-harvester:
+    image: temal/logio-harvester
+    links:
+      - "logio-server"
+    volumes:
+      - "./configs/logio/harvester:/home/logio/.log.io"
+      - "${CODE_DIR}:/logs/processing-server:ro"
+  plexrequests:
+    image: "linuxserver/plexrequests"
+    volumes_from:
+      - "shares"
+    volumes:
+      - "./configs/plexrequests:/config"
+    links:
+      - "sonarr"
+      - "couchpotato"
+    ports:
+      - "3000:3000"
+    environment:
+      - "PGID=0"
+      - "PUID=0"
+      - "TZ=America/New_York"
+    extra_hosts:
+      - "0.0.0.0:localhost"
+    restart: "always"

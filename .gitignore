@@ -1,0 +1,54 @@
+# nodejs
+node_modules
+
+# configs
+configs/plex/**
+
+# misc
+*.log
+*.pid
+*.lock
+*.check
+*.wait
+logs
+.DS_Store
+
+# Transmission
+configs/transmission/resume/**
+configs/transmission/torrents/**
+configs/transmission/settings.json.tmp*
+configs/transmission/*.txt
+!configs/transmission/stats.json
+
+# PlexPy db backups
+configs/plexpy/version*
+configs/plexpy/cache/**
+configs/plexpy/backups/**
+
+# Sonarr
+configs/sonarr/Backups
+configs/sonarr/MediaCover
+configs/sonarr/UpdateLogs
+configs/sonarr/log*
+configs/sonarr/xdg
+
+# Radarr
+configs/radarr-*/log*
+configs/radarr-*/MediaCover
+configs/radarr-*/xdg
+
+# Sabnzbd
+configs/sabnzbd/admin
+configs/sabnzbd/sabnzbd.ini.bak
+
+# Plex Requests diagnostics
+configs/plexrequests/db
+
+# MongoDB
+configs/mongo
+
+# Couchpotatos
+configs/couchpotato/*/data
+
+summary.txt
+.env
