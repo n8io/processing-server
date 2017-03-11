@@ -19,6 +19,7 @@ apt-get install -y \
   libxml2-utils \
   glances \
   ;
+pip install subliminal
 apt-get install -y \
   encfs \
   ;

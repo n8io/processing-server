@@ -8,6 +8,7 @@ CODE_DIR="$(dirname "$(dirname "$SCRIPT")")"
 rm -rf \
   "${CODE_DIR}/clean.log" \
   "${CODE_DIR}/enc-creates.log" \
+  "${CODE_DIR}/subtitles.log" \
   ;
 
 set +e
